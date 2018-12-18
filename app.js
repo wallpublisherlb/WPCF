@@ -27,12 +27,15 @@ router.get('/', function (req, res) {
     });
 });
 
-router.route('/wpbot/webhook/')
+router.route('/wpbot/wp/')
     .get((req, res) => {
+        console.log("Request: " + req);
+        console.log("Response: " + res);
 
     })
     .post((req, res) => {
-        
+        console.log("Request: " + req);
+        console.log("Response: " + res);
     });
 
 router.route('/wpbot/webhook/')
