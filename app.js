@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 var bodyParser = require('body-parser');
+var requestPromise = require('request-promise');
 
 require('./config/config.js');
 
@@ -31,37 +32,35 @@ router.route('/wpbot/wp/')
     .get((req, res) => {
         console.log("Request: " + req);
         console.log("Response: " + res);
-        requestPromise(requestOptions)
-            .then(function (data) {
-                response.json({
-                    "messages": [{
-                        "attachment": {
-                            "type": "template",
-                            "payload": {
-                                "template_type": "button",
-                                "text": "Hello!",
-                                "buttons": [{
-                                        "type": "show_block",
-                                        "block_names": ["name of block"],
-                                        "title": "Show Block"
-                                    },
-                                    {
-                                        "type": "web_url",
-                                        "url": "http://wallpublisher.com",
-                                        "title": "Visit Website"
-                                    },
-                                    {
-                                        "url": "http://wallpublisher.com",
-                                        "type": "json_plugin_url",
-                                        "title": "Postback"
-                                    }
-                                ]
-                            }
-                        }
-                    }]
-                });
 
-            })
+        res.json({
+            "messages": [{
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "button",
+                        "text": "Hello!",
+                        "buttons": [{
+                                "type": "show_block",
+                                "block_names": ["name of block"],
+                                "title": "Show Block"
+                            },
+                            {
+                                "type": "web_url",
+                                "url": "http://wallpublisher.com",
+                                "title": "Visit Website"
+                            },
+                            {
+                                "url": "http://wallpublisher.com",
+                                "type": "json_plugin_url",
+                                "title": "Postback"
+                            }
+                        ]
+                    }
+                }
+            }]
+        });
+
     })
     .post((req, res) => {
         console.log("Request: " + req);

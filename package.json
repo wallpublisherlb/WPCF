@@ -11,7 +11,9 @@
   "dependencies": {
     "express": "^4.16.4",
     "fb-messenger": "^2.3.1",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2"
   },
   "engines": {
     "node": "10.x"
