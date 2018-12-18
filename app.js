@@ -29,118 +29,151 @@ router.get('/', function (req, res) {
 
 router.route('/wpbot/wp/')
     .get((req, res) => {
-        console.log("Request: " + req);
-        console.log("Response: " + res);
+            console.log("Request: " + req);
+            console.log("Response: " + res);
+            requestPromise(requestOptions)
+                .then(function (data) {
+                    response.json({
+                        "messages": [
+                          {
+                            "attachment": {
+                              "type": "template",
+                              "payload": {
+                                "template_type": "button",
+                                "text": "Hello!",
+                                "buttons": [
+                                  {
+                                    "type": "show_block",
+                                    "block_names": ["name of block"],
+                                    "title": "Show Block"
+                                  },
+                                  {
+                                    "type": "web_url",
+                                    "url": "http://wallpublisher.com",
+                                    "title": "Visit Website"
+                                  },
+                                  {
+                                    "url": "http://wallpublisher.com",
+                                    "type":"json_plugin_url",
+                                    "title":"Postback"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      });
 
-    })
-    .post((req, res) => {
-        console.log("Request: " + req);
-        console.log("Response: " + res);
-    });
+                })
+                .post((req, res) => {
+                    console.log("Request: " + req);
+                    console.log("Response: " + res);
 
-router.route('/wpbot/webhook/')
-    .get((req, res) => {
+                });
 
-        let VERIFY_TOKEN = process.env.TOKEN;
+            router.route('/wpbot/webhook/')
+                .get((req, res) => {
 
-        // Parse the query params
-        let mode = req.query['hub.mode'];
-        let token = req.query['hub.verify_token'];
-        let challenge = req.query['hub.challenge'];
+                    let VERIFY_TOKEN = process.env.TOKEN;
 
-        // Checks if a token and mode is in the query string of the request
-        if (mode && token) {
+                    // Parse the query params
+                    let mode = req.query['hub.mode'];
+                    let token = req.query['hub.verify_token'];
+                    let challenge = req.query['hub.challenge'];
 
-            // Checks the mode and token sent is correct
-            if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+                    // Checks if a token and mode is in the query string of the request
+                    if (mode && token) {
 
-                // Responds with the challenge token from the request
-                console.log('WEBHOOK_VERIFIED');
-                res.status(200).send(challenge);
+                        // Checks the mode and token sent is correct
+                        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
 
-            } else {
-                // Responds with '403 Forbidden' if verify tokens do not match
-                res.sendStatus(403);
+                            // Responds with the challenge token from the request
+                            console.log('WEBHOOK_VERIFIED');
+                            res.status(200).send(challenge);
+
+                        } else {
+                            // Responds with '403 Forbidden' if verify tokens do not match
+                            res.sendStatus(403);
+                        }
+                    }
+                })
+                .post((req, res) => {
+                    let token = process.env.TOKEN;
+                    var messaging_events = req.body.entry[0].messaging;
+                    for (var i = 0; i < messaging_events.length; i++) {
+                        var event = req.body.entry[0].messaging[i];
+                        var sender = event.sender.id;
+                        if (event.message && event.message.text) {
+                            var text = event.message.text;
+                            sendTextMessage(sender, text + "!", token);
+                        }
+                    }
+                    res.sendStatus(200);
+                });
+
+            function sendTextMessage(sender, text, token) {
+                const FBMessenger = require('fb-messenger')
+                const messenger = new FBMessenger({
+                    token: token
+                })
+                try {
+                    console.info("Sending message...");
+                    console.info("Sender: " + sender);
+                    console.info("Message: " + text);
+                    messenger.sendTextMessage(sender, text);
+                } catch (e) {
+                    console.error(e)
+                }
             }
-        }
-    })
-    .post((req, res) => {
-        let token = process.env.TOKEN;
-        var messaging_events = req.body.entry[0].messaging;
-        for (var i = 0; i < messaging_events.length; i++) {
-            var event = req.body.entry[0].messaging[i];
-            var sender = event.sender.id;
-            if (event.message && event.message.text) {
-                var text = event.message.text;
-                sendTextMessage(sender, text + "!", token);
+
+            router.route('/wpbot')
+                .get((req, res) => {
+                    if (req.query['hub.verify_token'] === process.env.TOKEN) {
+                        res.send(req.query['hub.challenge']);
+                    }
+                    res.send('Wrong token!');
+                })
+                .post((req, res) => {
+                    if (!validateRequest(req.body)) {
+                        console.log('wrong request');
+                    }
+
+                    res.json({
+                        message: 'BOTT'
+                    });
+                });
+
+
+            app.use('/', express.static(path.join(__dirname, 'FBBot')));
+            app.use('/', router);
+            app.on('error', onError);
+            app.listen(port);
+            console.log('new server created on port ' + port);
+
+            function onError(error) {
+                if (error.syscall !== "listen") {
+                    throw error;
+                }
+
+                var bind = typeof port === "string" ?
+                    "Pipe " + port :
+                    "Port " + port;
+
+                // handle specific listen errors with friendly messages
+                switch (error.code) {
+                    case "EACCES":
+                        console.error(bind + " requires elevated privileges");
+                        process.exit(1);
+                        break;
+                    case "EADDRINUSE":
+                        console.error(bind + " is already in use");
+                        process.exit(1);
+                        break;
+                    default:
+                        throw error;
+                }
             }
-        }
-        res.sendStatus(200);
-    });
 
-function sendTextMessage(sender, text, token) {
-    const FBMessenger = require('fb-messenger')
-    const messenger = new FBMessenger({
-        token: token
-    })
-    try {
-        console.info("Sending message...");
-        console.info("Sender: " + sender);
-        console.info("Message: " + text);
-        messenger.sendTextMessage(sender, text);
-    } catch (e) {
-        console.error(e)
-    }
-}
+            function validateRequest(body) {
 
-router.route('/wpbot')
-    .get((req, res) => {
-        if (req.query['hub.verify_token'] === process.env.TOKEN) {
-            res.send(req.query['hub.challenge']);
-        }
-        res.send('Wrong token!');
-    })
-    .post((req, res) => {
-        if (!validateRequest(req.body)) {
-            console.log('wrong request');
-        }
-
-        res.json({
-            message: 'BOTT'
-        });
-    });
-
-
-app.use('/', express.static(path.join(__dirname, 'FBBot')));
-app.use('/', router);
-app.on('error', onError);
-app.listen(port);
-console.log('new server created on port ' + port);
-
-function onError(error) {
-    if (error.syscall !== "listen") {
-        throw error;
-    }
-
-    var bind = typeof port === "string" ?
-        "Pipe " + port :
-        "Port " + port;
-
-    // handle specific listen errors with friendly messages
-    switch (error.code) {
-        case "EACCES":
-            console.error(bind + " requires elevated privileges");
-            process.exit(1);
-            break;
-        case "EADDRINUSE":
-            console.error(bind + " is already in use");
-            process.exit(1);
-            break;
-        default:
-            throw error;
-    }
-}
-
-function validateRequest(body) {
-
-}
+            }
